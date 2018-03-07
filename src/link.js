@@ -9,11 +9,12 @@ function copyIfValid(src, dest, keys) {
 
 class Link {
 
-    constructor(rel, data, optional = {}) {
+    constructor(rel, data, optional = {}, multiple = false) {
         if (rel === undefined || data === undefined) {
-            throw (new Error('rel and href required'))
+            throw (new Error('rel and href required'));
         }
         this.rel = rel;
+        this.is_multiple = multiple;
         if (typeof data === 'string') {
             this.href = data;
             data = optional;
@@ -30,11 +31,15 @@ class Link {
         ]);
     }
 
+    multiple() {
+        return this.is_multiple;
+    }
+
     toJSON() {
         const jsonObj = {};
         for (let prop in this) {
             if (this.hasOwnProperty(prop)) {
-                if(prop === 'rel') {
+                if(prop === 'rel' || prop === 'is_multiple') {
                     continue;
                 }
                 if(this[prop] !== undefined) {
