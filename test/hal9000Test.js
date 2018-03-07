@@ -55,25 +55,64 @@ describe('resource', () => {
         expect(actual).to.eql(expectation);
     });
 
-    it('creates HALObject with multiple links with the same relation', () => {
-      const actual = hal9k.resource()
-          .link('self', '/orders')
-          .link('items', ['/first_item', '/second_item'])
-          .toJSON();
-      const expectation = {
-          _links: {
-              self: {
-                  href: '/orders'
-              },
-              items: [{
-                  href: '/first_item'
-              },{
-                  href: '/second_item'
-              }]
+    it('creates HALObject with link Object Array with a single member', () => {
+        const actual = hal9k.resource()
+            .link('self', '/orders')
+            .link('items', ['/first_item'])
+            .toJSON();
+        const expectation = {
+            _links: {
+                self: {
+                    href: '/orders'
+                },
+                items: [{
+                    href: '/first_item'
+                }]
             }
-      };
-      expect(actual).to.eql(expectation);
-  });
+        };
+        expect(actual).to.eql(expectation);
+    });
+
+    it('creates HALObject with link Object Array with one call', () => {
+        const actual = hal9k.resource()
+            .link('self', '/orders')
+            .link('items', ['/first_item', '/second_item'])
+            .toJSON();
+        const expectation = {
+            _links: {
+                self: {
+                    href: '/orders'
+                },
+                items: [{
+                    href: '/first_item'
+                }, {
+                    href: '/second_item'
+                }]
+            }
+        };
+        expect(actual).to.eql(expectation);
+    });
+
+    it('creates HALObject with link Object Array with multiple calls', () => {
+        const actual = hal9k.resource()
+            .link('self', '/orders')
+            .link('items', '/first_item')
+            .link('items', '/second_item')
+            .toJSON();
+        const expectation = {
+            _links: {
+                self: {
+                    href: '/orders'
+                },
+                items: [{
+                    href: '/first_item'
+                }, {
+                    href: '/second_item'
+                }]
+            }
+        };
+        expect(actual).to.eql(expectation);
+    });
 
     it('creates HALObject with link relations', () => {
         const actual = hal9k.resource()
@@ -195,7 +234,33 @@ describe('resource', () => {
         expect(actual).to.eql(expectation);
     });
 
-    it('creates HALObject with embedded resource Object Array', () => {
+    it('creates HALObject with embedded resource Object Array with a single member', () => {
+        const embeddedResource1 = hal9k.resource()
+            .link('self', '/example/href/1')
+            .state({
+                key1: 'value1',
+            });
+
+        const actual = hal9k.resource()
+            .embed('exampleRel', [embeddedResource1])
+            .toJSON();
+
+        const expectation = {
+            _embedded: {
+                exampleRel: [{
+                    _links: {
+                        self: {
+                            href: '/example/href/1'
+                        }
+                    },
+                    key1: 'value1',
+                },]
+            }
+        };
+        expect(actual).to.eql(expectation);
+    });
+
+    it('creates HALObject with embedded resource Object Array with one call', () => {
         const embeddedResource1 = hal9k.resource()
             .link('self', '/example/href/1')
             .state({
@@ -227,13 +292,50 @@ describe('resource', () => {
                         }
                     },
                     key1: 'value2',
-                }, ]
+                },]
             }
         };
         expect(actual).to.eql(expectation);
     });
 
+    it('creates HALObject with embedded resource Object Array with multiple calls', () => {
+        const embeddedResource1 = hal9k.resource()
+            .link('self', '/example/href/1')
+            .state({
+                key1: 'value1',
+            });
+        const embeddedResource2 = hal9k.resource()
+            .link('self', '/example/href/2')
+            .state({
+                key1: 'value2',
+            });
 
+        const actual = hal9k.resource()
+            .embed('exampleRel', embeddedResource1)
+            .embed('exampleRel', embeddedResource2)
+            .toJSON();
+
+        const expectation = {
+            _embedded: {
+                exampleRel: [{
+                    _links: {
+                        self: {
+                            href: '/example/href/1'
+                        }
+                    },
+                    key1: 'value1',
+                }, {
+                    _links: {
+                        self: {
+                            href: '/example/href/2'
+                        }
+                    },
+                    key1: 'value2',
+                },]
+            }
+        };
+        expect(actual).to.eql(expectation);
+    });
 });
 
 describe('fromJSON', () => {
@@ -247,7 +349,7 @@ describe('fromJSON', () => {
                 "self": {
                     "href": "/orders"
                 }
-              }
+            }
         }`;
         const expectation = hal9k.resource()
         .link('self', '/orders');
@@ -261,7 +363,7 @@ describe('fromJSON', () => {
                 self: {
                     href: "/orders"
                 }
-              }
+            }
         }`;
         const expectation = hal9k.resource()
         .link('self', '/orders');
@@ -378,37 +480,37 @@ describe('fromJSON', () => {
     });
 
     it('creates HALObject from JSON with multiple links with the same relation', () => {
-      const input = {
-          _links: {
-              self: {
-                  href: '/orders'
-              },
-              items: [{
-                  href: '/first_item'
-              },{
-                  href: '/second_item'
-              }]
+        const input = {
+            _links: {
+                self: {
+                    href: '/orders'
+                },
+                items: [{
+                    href: '/first_item'
+                }, {
+                    href: '/second_item'
+                }]
             }
-      };
-      const expectation = hal9k.resource()
-      .link('self', '/orders')
-      .link('items', ['/first_item', '/second_item']);
-      const actual = hal9k.fromJSON(input);
-      expect(actual).to.eql(expectation);
-  });
+        };
+        const expectation = hal9k.resource()
+            .link('self', '/orders')
+            .link('items', ['/first_item', '/second_item']);
+        const actual = hal9k.fromJSON(input);
+        expect(actual).to.eql(expectation);
+    });
 
     it('what if we give json with link Relation', () => {
         const input = {
-         _links: {
-           self: { href: '/orders' },
-           curies: [{
-             name: 'acme',
-             href: 'http://docs.acme.com/relations/{rel}',
-             templated: true
-           }],
-           'acme:widgets': { href: '/widgets' }
-         }
-       };
+            _links: {
+                self: { href: '/orders' },
+                curies: [{
+                    name: 'acme',
+                    href: 'http://docs.acme.com/relations/{rel}',
+                    templated: true
+                }],
+                'acme:widgets': { href: '/widgets' }
+            }
+        };
         const expectation = hal9k.resource()
         .link('self', '/orders')
         .curie('acme', 'http://docs.acme.com/relations/{rel}')
