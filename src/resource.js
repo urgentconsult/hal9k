@@ -22,18 +22,19 @@ class Resource {
     }
 
     link(rel, href, optionals) {
-        if (arguments.length > 1 && typeof href === 'string') {
+        if (typeof href === 'string') {
             const link = Object.assign({
                 href
             }, optionals)
             this.links.push(new Link(rel, link));
-        } else if (arguments.length == 2 && Array.isArray(href)) {
+        } else if (Array.isArray(href)) {
+            const multiple = true;
             for (let i = 0; i < href.length; i++) {
-                this.links.push(new Link(rel, href[i]));
+                this.links.push(new Link(rel, href[i], optionals, multiple));
             }
-        } else if (arguments.length == 2 && typeof href === 'object') {
+        } else if (typeof href === 'object') {
             const link = Object.assign({}, href);
-            this.links.push(new Link(rel, link));
+            this.links.push(new Link(rel, link, optionals));
         }
         return this;
     }
@@ -48,12 +49,10 @@ class Resource {
         return this;
     }
 
-    curie(rel, urlTemplate) {
-        this.links.push(new Link('curies', {
-            name: rel,
-            href: urlTemplate,
-            templated: true
-        }));
+    curie(name, urlTemplate) {
+        const templated = true;
+        const multiple = true;
+        this.links.push(new Link('curies', urlTemplate, { name, templated }, multiple));
         return this;
     }
 
@@ -71,26 +70,35 @@ class Resource {
     }
 
     toJSON() {
-        const _embedded = this.embedded.reduce((obj, resource) => {
-            if (Array.isArray(resource.resource)) {
-                obj[resource.rel] = resource.resource.map(resource => resource.toJSON());
+        const _embedded = this.embedded.reduce((obj, embedded) => {
+            const { rel, resource: res } = embedded;
+            const exists = obj.hasOwnProperty(rel);
+            const multiple = Array.isArray(res);
+
+            if (multiple) {
+                if (Array.isArray(obj[rel])) {
+                    obj[rel] = obj[rel].concat(res.map(r => r.toJSON()));
+                } else if (exists) {
+                    obj[rel] = [obj[rel]].concat(res.map(r => r.toJSON()));
+                } else {
+                    obj[rel] = res.map(r => r.toJSON());
+                }
+            } else if (Array.isArray(obj[rel])) {
+                obj[rel].push(res.toJSON());
+            } else if (exists) {
+                obj[rel] = [obj[rel], res.toJSON()];
             } else {
-                obj[resource.rel] = resource.resource.toJSON();
+                obj[rel] = res.toJSON();
             }
             return obj;
         }, {});
 
         const _links = this.links.reduce((obj, link) => {
-            if(link.rel === 'curies' && !obj.hasOwnProperty('curies')) {
-                obj.curies = [];
-            }
-
             if (!obj.hasOwnProperty(link.rel)) {
-                obj[link.rel] = link.toJSON();
+                obj[link.rel] = link.multiple() ? [link.toJSON()] : link.toJSON();
             } else if (Array.isArray(obj[link.rel])) {
                 obj[link.rel].push(link.toJSON());
-            } else if (typeof obj[link.rel] === 'object' &&
-                obj[link.rel] !== null) {
+            } else {
                 obj[link.rel] = [obj[link.rel], link.toJSON()];
             }
             return obj;
